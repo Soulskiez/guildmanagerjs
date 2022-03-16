@@ -15,11 +15,9 @@ io.on('connection', socket => {
     socket.join(roomKey);
     Promise.all([fetchSockets(roomKey)]).then((value) => {
         // ATTENTION: This relies on one room existing.
-        if(value[0].length >= 4) {
+        console.log(value[0].length);
+        if(value[0].length >= 1) { //change to 4 when not testing.
             beginGame(roomKey, value[0]);
-            // setTimeout(() => {
-            //     io.to('room 1').emit('game-start', {userIds: [], something: 1});
-            // }, 3000);
         }
     });
     
@@ -38,21 +36,15 @@ const fetchSockets = async roomKey => {
     return sockets;
 }
 
-const connectToRedis = async () => {
-    const client = createClient();
-    client.on('error', (err) => console.log('Redis Client Error ', err));
-    return client;
-    // await client.connect();
-    // await client.mSet('keyTEst', 'testValue');
-}
-
 const savePlayersByRoomId = async (roomKey, playersToSave) => {
     const client = createClient();
     await client.connect();
     await client.set(roomKey, JSON.stringify(playersToSave));
+    const playersString = await client.get(roomKey);
+    return JSON.parse(playersString);
 }
 
-const beginGame = (roomKey, connectedPlayers) => {
+const beginGame = async (roomKey, connectedPlayers) => {
     //io.to(roomKey).emit('game-start', {userIds: [], something: 1});
     const playersToSave = connectedPlayers.map(player => (
         {
@@ -62,8 +54,8 @@ const beginGame = (roomKey, connectedPlayers) => {
             reputation: 0,
         }
     ));
-    savePlayersByRoomId(roomKey, playersToSave);
-    
+    const players = await savePlayersByRoomId(roomKey, playersToSave);
+    io.to(roomKey).emit('game-start', players);
 }
 
 
