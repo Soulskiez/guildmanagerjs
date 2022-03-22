@@ -20,6 +20,11 @@ io.on('connection', socket => {
             beginGame(roomKey, value[0]);
         }
     });
+
+    socket.on('addName', (updatedPlayersInfo) => {
+        console.log('badabinmg');
+        addNameToPlayer(roomKey, updatedPlayersInfo);
+    });
     
     socket.on('testFirst', (textFromUser) => {
         socket.to('room 1').emit('testFirst', textFromUser);
@@ -30,6 +35,16 @@ io.on('connection', socket => {
     });
 
 });
+
+const addNameToPlayer = async (roomKey, updatedPlayersInfo) => {
+    const client = createClient();
+    await client.connect();
+    const playersList = updatedPlayersInfo.allPlayers;
+    playersList[0].name = updatedPlayersInfo.playerName;
+    await client.set(roomKey, JSON.stringify(playersList));
+    const playersString = await client.get(roomKey);
+    io.to(roomKey).emit('playerName-updated', JSON.parse(playersString));
+} 
 
 const fetchSockets = async roomKey => {
     const sockets = await io.in(roomKey).fetchSockets();
